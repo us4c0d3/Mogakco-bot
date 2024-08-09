@@ -19,7 +19,7 @@ class MyBot(commands.Bot):
             sync_command=True,
             application_id=APPLICATION_ID
         )
-        self.initial_extension = []
+        self.initial_extension = ["Cogs.Ping"]
 
     async def setup_hook(self):
         for ext in self.initial_extension:
