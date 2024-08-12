@@ -24,11 +24,14 @@ class MyBot(commands.Bot):
             application_id=APPLICATION_ID
         )
 
-        self.initial_extension = ["cogs.Ping"]
+    async def load_extensions(self):
+        print('Loading extensions...')
+        for filename in os.listdir('./cogs'):
+            if filename.endswith('.py'):
+                await self.load_extension(f'cogs.{filename[:-3]}')
 
     async def setup_hook(self):
-        for ext in self.initial_extension:
-            await self.load_extension(ext)
+        await self.load_extensions()
 
         # await bot.tree.sync(guild=discord.Object(id=tokens.guild_id))
         await bot.tree.sync()
