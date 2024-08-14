@@ -37,8 +37,8 @@ class MyBot(commands.Bot):
     async def setup_hook(self):
         await self.load_extensions()
         print('Syncing command tree...')
-        # await bot.tree.sync(guild=discord.Object(id=TEST_GUILD_ID))
-        await bot.tree.sync()
+        await bot.tree.sync(guild=discord.Object(id=TEST_GUILD_ID))
+        # await bot.tree.sync()
         print('Command tree sync complete')
         print('========================')
 
