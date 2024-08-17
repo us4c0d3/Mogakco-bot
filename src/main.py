@@ -1,8 +1,12 @@
+import logging
 import os
 
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
+
+logger = logging.getLogger('MogakcoBot')
+logger.setLevel(logging.INFO)
 
 load_dotenv()
 
@@ -26,30 +30,30 @@ class MyBot(commands.Bot):
         )
 
     async def load_extensions(self):
-        print('Loading extensions...')
+        logger.info('Loading extensions...')
         for filename in os.listdir('./cogs'):
             if filename.endswith('.py'):
                 await self.load_extension(f'cogs.{filename[:-3]}')
-                print(f'Loaded {filename}')
-        print('Load extensions complete')
-        print('========================')
+                logger.info(f'Loaded {filename}')
+        logger.info('Load extensions complete')
 
     async def setup_hook(self):
         await self.load_extensions()
-        print('Syncing command tree...')
-        # await bot.tree.sync(guild=discord.Object(id=TEST_GUILD_ID))
-        await bot.tree.sync()
-        print('Command tree sync complete')
-        print('========================')
+        logger.info('Syncing command tree...')
+        await bot.tree.sync(guild=discord.Object(id=TEST_GUILD_ID))
+        # await bot.tree.sync()
+        logger.info('Command tree sync complete')
 
     async def on_ready(self):
-        print('Logged in as')
-        print(self.user.name)
-        print(self.user.id)
-        print("=================")
+        logger.info(f'Logged in as {self.user.name}, ID: {self.user.id}')
         game = discord.Game("...")
         await self.change_presence(status=discord.Status.online, activity=game)
 
 
 bot = MyBot()
-bot.run(DISCORD_TOKEN)
+
+if __name__ == '__main__':
+    try:
+        bot.run(DISCORD_TOKEN)
+    except Exception as e:
+        logger.error(e)

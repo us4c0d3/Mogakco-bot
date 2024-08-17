@@ -6,6 +6,8 @@ from discord import Poll, app_commands
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
 
+from src.main import logger
+
 load_dotenv()
 
 POLL_CHANNEL_ID = os.getenv('POLL_CHANNEL_ID')
@@ -23,13 +25,13 @@ class Vote(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.create_vote.start()
-        print(f'Vote.py is ready')
+        logger.info('Vote.py is ready')
 
     @tasks.loop(time=time(hour=10, minute=0, second=0, tzinfo=KST))
     async def create_vote(self) -> None:
-        print('투표 생성')
+        logger.info('투표 생성')
         if self.channel is None:
-            print('투표 채널이 설정되지 않았습니다.')
+            logger.info('투표 채널이 설정되지 않았습니다.')
             return
 
         try:
