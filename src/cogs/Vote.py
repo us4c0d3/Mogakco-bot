@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import timedelta, datetime, timezone, time
 
@@ -6,8 +7,7 @@ from discord import Poll, app_commands
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
 
-from src.main import logger
-
+logger = logging.getLogger('Vote')
 load_dotenv()
 
 POLL_CHANNEL_ID = os.getenv('POLL_CHANNEL_ID')
