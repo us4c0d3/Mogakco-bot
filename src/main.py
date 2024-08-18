@@ -1,3 +1,4 @@
+import logging
 import os
 
 import discord
@@ -9,6 +10,8 @@ load_dotenv()
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 APPLICATION_ID = os.getenv('APPLICATION_ID')
 TEST_GUILD_ID = os.getenv('TEST_GUILD_ID')
+
+discord.utils.setup_logging(level=logging.DEBUG)
 
 
 class MyBot(commands.Bot):
@@ -26,30 +29,30 @@ class MyBot(commands.Bot):
         )
 
     async def load_extensions(self):
-        print('Loading extensions...')
+        logging.info('Loading extensions...')
         for filename in os.listdir('./cogs'):
             if filename.endswith('.py'):
                 await self.load_extension(f'cogs.{filename[:-3]}')
-                print(f'Loaded {filename}')
-        print('Load extensions complete')
-        print('========================')
+                logging.info(f'Loaded {filename}')
+        logging.info('Load extensions complete')
 
     async def setup_hook(self):
         await self.load_extensions()
-        print('Syncing command tree...')
+        logging.info('Syncing command tree...')
         await bot.tree.sync(guild=discord.Object(id=TEST_GUILD_ID))
         # await bot.tree.sync()
-        print('Command tree sync complete')
-        print('========================')
+        logging.info('Command tree sync complete')
 
     async def on_ready(self):
-        print('Logged in as')
-        print(self.user.name)
-        print(self.user.id)
-        print("=================")
-        game = discord.Game("...")
+        logging.info(f'Logged in as {self.user.name} - {self.user.id}')
+        game = discord.Game("공부")
         await self.change_presence(status=discord.Status.online, activity=game)
 
 
 bot = MyBot()
-bot.run(DISCORD_TOKEN)
+
+if __name__ == '__main__':
+    try:
+        bot.run(DISCORD_TOKEN)
+    except Exception as e:
+        logging.error(e)

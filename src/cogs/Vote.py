@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import timedelta, datetime, timezone, time
 
@@ -18,18 +19,18 @@ KST = timezone(timedelta(hours=9))
 class Vote(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot = bot
-        self.channel = None
+        self.channel = POLL_CHANNEL_ID
 
     @commands.Cog.listener()
     async def on_ready(self):
         self.create_vote.start()
-        print(f'Vote.py is ready')
+        logging.info('Vote.py is ready')
 
     @tasks.loop(time=time(hour=10, minute=0, second=0, tzinfo=KST))
     async def create_vote(self) -> None:
-        print('투표 생성')
+        logging.info('투표 생성')
         if self.channel is None:
-            print('투표 채널이 설정되지 않았습니다.')
+            logging.warning('투표 채널이 설정되지 않았습니다.')
             return
 
         try:
@@ -42,14 +43,14 @@ class Vote(commands.Cog):
 
             await self.channel.send(poll=poll)
         except Exception as e:
-            print(e)
+            logging.error(e)
 
     @app_commands.command(name='votechannel', description='투표를 올릴 채널을 설정합니다')
     async def set_channel(self, interaction: discord.Interaction) -> None:
         self.channel = interaction.channel
-        print(f'Vote channel set to: {self.channel}')
-        print(f'Vote channel id: {self.channel.id}')
-        print(f'Vote channel name: {self.channel.name}')
+        logging.info(f'Vote channel set to: {self.channel}')
+        logging.info(f'Vote channel id: {self.channel.id}')
+        logging.info(f'Vote channel name: {self.channel.name}')
         await interaction.response.send_message("투표 채널이 설정되었습니다.")
 
 
