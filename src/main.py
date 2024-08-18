@@ -40,13 +40,13 @@ class MyBot(commands.Bot):
     async def setup_hook(self):
         await self.load_extensions()
         logger.info('Syncing command tree...')
-        await bot.tree.sync(guild=discord.Object(id=TEST_GUILD_ID))
-        # await bot.tree.sync()
+        # await bot.tree.sync(guild=discord.Object(id=TEST_GUILD_ID))
+        await bot.tree.sync()
         logger.info('Command tree sync complete')
 
     async def on_ready(self):
         logger.info(f'Logged in as {self.user.name}, ID: {self.user.id}')
-        game = discord.Game("...")
+        game = discord.Game("공부")
         await self.change_presence(status=discord.Status.online, activity=game)
 
 
