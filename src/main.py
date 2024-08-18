@@ -5,14 +5,13 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
-logger = logging.getLogger('MogakcoBot')
-logger.setLevel(logging.INFO)
-
 load_dotenv()
 
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 APPLICATION_ID = os.getenv('APPLICATION_ID')
 TEST_GUILD_ID = os.getenv('TEST_GUILD_ID')
+
+discord.utils.setup_logging(level=logging.DEBUG)
 
 
 class MyBot(commands.Bot):
@@ -30,22 +29,22 @@ class MyBot(commands.Bot):
         )
 
     async def load_extensions(self):
-        logger.info('Loading extensions...')
+        logging.info('Loading extensions...')
         for filename in os.listdir('./cogs'):
             if filename.endswith('.py'):
                 await self.load_extension(f'cogs.{filename[:-3]}')
-                logger.info(f'Loaded {filename}')
-        logger.info('Load extensions complete')
+                logging.info(f'Loaded {filename}')
+        logging.info('Load extensions complete')
 
     async def setup_hook(self):
         await self.load_extensions()
-        logger.info('Syncing command tree...')
-        # await bot.tree.sync(guild=discord.Object(id=TEST_GUILD_ID))
-        await bot.tree.sync()
-        logger.info('Command tree sync complete')
+        logging.info('Syncing command tree...')
+        await bot.tree.sync(guild=discord.Object(id=TEST_GUILD_ID))
+        # await bot.tree.sync()
+        logging.info('Command tree sync complete')
 
     async def on_ready(self):
-        logger.info(f'Logged in as {self.user.name}, ID: {self.user.id}')
+        logging.info(f'Logged in as {self.user.name} - {self.user.id}')
         game = discord.Game("공부")
         await self.change_presence(status=discord.Status.online, activity=game)
 
@@ -56,4 +55,4 @@ if __name__ == '__main__':
     try:
         bot.run(DISCORD_TOKEN)
     except Exception as e:
-        logger.error(e)
+        logging.error(e)
