@@ -19,10 +19,19 @@ KST = timezone(timedelta(hours=9))
 class Vote(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot = bot
-        self.channel = POLL_CHANNEL_ID
+        self.channel_id = int(TEST_CHANNEL_ID)
+        self.channel = None
+        self.poll = None
 
     @commands.Cog.listener()
     async def on_ready(self):
+        self.channel = self.bot.get_channel(self.channel_id)
+
+        if self.channel:
+            logging.info(f'Default vote channel set to: {self.channel.name} (ID: {self.channel.id})')
+        else:
+            logging.warning(f'Channel with ID {self.channel_id} not found.')
+
         self.create_vote.start()
         logging.info('Vote.py is ready')
 
@@ -55,4 +64,4 @@ class Vote(commands.Cog):
 
 
 async def setup(bot) -> None:
-    await bot.add_cog(Vote(bot))
+    await bot.add_cog(Vote(bot), guilds=[discord.Object(id=TEST_GUILD_ID)])
