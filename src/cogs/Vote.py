@@ -19,7 +19,7 @@ KST = timezone(timedelta(hours=9))
 class Vote(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot = bot
-        self.channel_id = int(TEST_CHANNEL_ID)
+        self.channel_id = int(POLL_CHANNEL_ID)
         self.channel = None
         self.poll = None
 
@@ -64,4 +64,4 @@ class Vote(commands.Cog):
 
 
 async def setup(bot) -> None:
-    await bot.add_cog(Vote(bot), guilds=[discord.Object(id=TEST_GUILD_ID)])
+    await bot.add_cog(Vote(bot))
