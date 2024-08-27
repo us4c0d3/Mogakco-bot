@@ -19,14 +19,23 @@ KST = timezone(timedelta(hours=9))
 class Vote(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot = bot
-        self.channel = POLL_CHANNEL_ID
+        self.channel_id = int(POLL_CHANNEL_ID)
+        self.channel = None
+        self.poll = None
 
     @commands.Cog.listener()
     async def on_ready(self):
+        self.channel = self.bot.get_channel(self.channel_id)
+
+        if self.channel:
+            logging.info(f'Default vote channel set to: {self.channel.name} (ID: {self.channel.id})')
+        else:
+            logging.warning(f'Channel with ID {self.channel_id} not found.')
+
         self.create_vote.start()
         logging.info('Vote.py is ready')
 
-    @tasks.loop(time=time(hour=10, minute=0, second=0, tzinfo=KST))
+    @tasks.loop(time=time(hour=9, minute=0, second=0, tzinfo=KST))
     async def create_vote(self) -> None:
         logging.info('투표 생성')
         if self.channel is None:
@@ -38,8 +47,8 @@ class Vote(commands.Cog):
             question = f"{today.month}월 {today.day}일 참여 투표"
             duration = timedelta(hours=10)
             poll = Poll(question=question, duration=duration)
-            poll.add_answer(text="참가", emoji='✅')
-            poll.add_answer(text="불참", emoji='❌')
+            poll.add_answer(text="8시 ~ 10시 참가", emoji='✅')
+            poll.add_answer(text="10시 ~ 12시 참가", emoji='✅')
 
             await self.channel.send(poll=poll)
         except Exception as e:
