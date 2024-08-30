@@ -166,5 +166,5 @@ class Vote(commands.Cog):
 
 
 async def setup(bot) -> None:
-    await bot.add_cog(Vote(bot), guild=discord.Object(id=TEST_GUILD_ID))
-    # await bot.add_cog(Vote(bot))
+    # await bot.add_cog(Vote(bot), guild=discord.Object(id=TEST_GUILD_ID))
+    await bot.add_cog(Vote(bot))
