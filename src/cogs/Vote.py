@@ -19,6 +19,7 @@ KST = timezone(timedelta(hours=9))
 class Vote(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot = bot
+        # self.channel_id = int(TEST_CHANNEL_ID)
         self.channel_id = int(POLL_CHANNEL_ID)
         self.channel = None
         self.poll = None
@@ -46,7 +47,7 @@ class Vote(commands.Cog):
             today = datetime.today()
             question = f"{today.month}월 {today.day}일 참여 투표"
             duration = timedelta(hours=10)
-            poll = Poll(question=question, duration=duration)
+            poll = Poll(question=question, duration=duration, multiple=True)
             poll.add_answer(text="8시 ~ 10시 참가", emoji='✅')
             poll.add_answer(text="10시 ~ 12시 참가", emoji='✅')
 
@@ -64,4 +65,5 @@ class Vote(commands.Cog):
 
 
 async def setup(bot) -> None:
+    # await bot.add_cog(Vote(bot), guild=discord.Object(id=TEST_GUILD_ID))
     await bot.add_cog(Vote(bot))
