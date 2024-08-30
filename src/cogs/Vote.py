@@ -92,12 +92,6 @@ class Vote(commands.Cog):
         except Exception as e:
             logging.error(e)
 
-    @app_commands.command(name='votechannel', description='투표를 올릴 채널을 설정합니다')
-    async def set_channel(self, interaction: discord.Interaction) -> None:
-        self.vote_channel = interaction.channel
-        logging.info(f'Vote channel set to: {self.vote_channel.name} (ID: {self.vote_channel.id})')
-        await interaction.response.send_message("투표 채널이 설정되었습니다.")
-
     # 19:30 투표자 취합
     @tasks.loop(time=time(hour=19, minute=30, second=0, tzinfo=KST))
     # @app_commands.command(name='getvoters')
