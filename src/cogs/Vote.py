@@ -27,8 +27,8 @@ class Vote(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot = bot
 
-        self.vote_channel_id = int(TEST_POLL_CHANNEL_ID)
-        # self.vote_channel_id = int(VOTE_CHANNEL_ID)
+        # self.vote_channel_id = int(TEST_POLL_CHANNEL_ID)
+        self.vote_channel_id = int(VOTE_CHANNEL_ID)
         self.vote_channel = None
 
         self.poll_message = None
