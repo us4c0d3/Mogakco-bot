@@ -20,7 +20,7 @@ KST = timezone(timedelta(hours=9))
 class Alert(commands.Cog):
     """
     알림 관련 타임라인
-    18:50 투표 마감 10분 전 알림
+    18:30 투표 마감 30분 전 알림
     19:20 투표자 취합
     19:30 20시 참가자 30분 전 알림
     20:10 지각자 알림
@@ -72,15 +72,15 @@ class Alert(commands.Cog):
 
         logging.info('Alert.py is ready')
 
-    # 18:50 투표 마감 10분 전 알림
-    @tasks.loop(time=time(hour=18, minute=50, second=0, tzinfo=KST))
+    # 18:30 투표 마감 30분 전 알림
+    @tasks.loop(time=time(hour=18, minute=30, second=0, tzinfo=KST))
     async def alert_vote_end(self) -> None:
         try:
             if self.vote_channel is None:
                 logging.warning(f'Vote channel not set.')
                 return
 
-            self.vote_channel.send('@everyone 투표 마감 10분 전입니다!')
+            await self.vote_channel.send('@everyone 투표 마감 10분 전입니다!')
 
         except Exception as e:
             logging.error(e)
