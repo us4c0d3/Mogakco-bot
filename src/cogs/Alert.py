@@ -80,7 +80,7 @@ class Alert(commands.Cog):
                 logging.warning(f'Vote channel not set.')
                 return
 
-            await self.vote_channel.send('@everyone 투표 마감 10분 전입니다!')
+            await self.vote_channel.send('@everyone 투표 마감 30분 전입니다!')
 
         except Exception as e:
             logging.error(e)
