@@ -60,8 +60,8 @@ class Vote(commands.Cog):
             question = f"{today.month}월 {today.day}일 참여 투표"
             duration = timedelta(hours=10)
             poll = Poll(question=question, duration=duration, multiple=True)
-            poll.add_answer(text="20시 ~ 22시 참가", emoji='✅')
-            poll.add_answer(text="22시 ~ 24시 참가", emoji='✅')
+            poll.add_answer(text="참가", emoji='✅')
+            poll.add_answer(text="불참", emoji='❌')
 
             # await interaction.response.send_message(poll=poll)
             # self.poll_message = await interaction.original_response()
@@ -80,18 +80,12 @@ class Vote(commands.Cog):
             poll = message.poll
             logging.info(f'poll answers: {poll.answers}')
 
-            eight_to_ten_voters = [voter async for voter in poll.get_answer(id=1).voters()]
-            ten_to_twelve_voters = [voter async for voter in poll.get_answer(id=2).voters()]
-            logging.info(f'20 ~ 22 투표자: {eight_to_ten_voters}')
-            logging.info(f'22 ~ 24 투표자: {ten_to_twelve_voters}')
-
-            # await interaction.response.send_message(f'20 ~ 22 투표자: {eight_to_ten_voters}\n'
-            #                                         f'22 ~ 24 투표자: {ten_to_twelve_voters}',
-            #                                         ephemeral=True)
+            attend_voters = [voter async for voter in poll.get_answer(id=1).voters()]
+            logging.info(f'참가 투표자: {attend_voters}')
 
             alert_cog = self.bot.get_cog('Alert')
             if alert_cog:
-                alert_cog.update_voters(eight_to_ten_voters, ten_to_twelve_voters)
+                alert_cog.update_voters(attend_voters)
 
         except Exception as e:
             logging.error(e)
