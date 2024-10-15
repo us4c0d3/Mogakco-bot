@@ -1,9 +1,7 @@
 import logging
 import os
-from datetime import timedelta, timezone, time
+from datetime import timedelta, timezone, time, datetime
 
-import discord
-from discord import app_commands
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
 
@@ -22,11 +20,11 @@ class Alert(commands.Cog):
     알림 관련 타임라인
     18:30 투표 마감 30분 전 알림
     19:20 투표자 취합
-    19:30 20시 참가자 30분 전 알림
-    20:10 지각자 알림
-    21:30 22시 참가자 30분 전 알림
-    22:10 지각자 알림
+    19:30 참가자 30분 전 알림
+    20:30 지각자 알림
+    24:30 참가자 및 불참자 알림
     """
+
     def __init__(self, bot) -> None:
         self.bot = bot
 
@@ -39,8 +37,10 @@ class Alert(commands.Cog):
         self.attendance_channel_id = int(ATTENDANCE_CHANNEL_ID)
         self.attendance_channel = None
 
-        self.eight_to_ten_voters = []
-        self.ten_to_twelve_voters = []
+        self.attend_voters = []
+
+        self.voice_times = {}
+        self.two_hours_members = []
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -65,10 +65,9 @@ class Alert(commands.Cog):
             logging.warning(f'Channel with ID {self.attendance_channel_id} not found.')
 
         self.alert_vote_end.start()
-        self.alert_attendance_eight.start()
-        self.alert_eight_to_ten.start()
-        self.alert_attendance_ten.start()
-        self.alert_ten_to_twelve.start()
+        self.alert_attendance.start()
+        self.alert_late.start()
+        self.alert_final_attendance.start()
 
         logging.info('Alert.py is ready')
 
@@ -86,23 +85,41 @@ class Alert(commands.Cog):
             logging.error(e)
 
     # 19:20 투표자 취합
-    def update_voters(self, eight_to_ten_voters, ten_to_twelve_voters):
-        self.eight_to_ten_voters = eight_to_ten_voters
-        self.ten_to_twelve_voters = ten_to_twelve_voters
+    def update_voters(self, attend_voters):
+        self.attend_voters = attend_voters
 
     # 19:30 20시 참가자 30분 전 알림
     @tasks.loop(time=time(hour=19, minute=30, second=0, tzinfo=KST))
-    async def alert_attendance_eight(self) -> None:
-        if len(self.eight_to_ten_voters) == 0:
-            logging.info('eight_to_ten_voters is empty')
+    async def alert_attendance(self) -> None:
+        if len(self.attend_voters) == 0:
+            logging.info('attend_voters is empty')
             return
 
-        mentions = ' '.join([f'<@{member.id}>' for member in self.eight_to_ten_voters])
+        mentions = ' '.join([f'<@{member.id}>' for member in self.attend_voters])
         await self.attendance_channel.send(f'{mentions} 20시 모각코 30분 전입니다!')
 
-    # 20:10 지각자 알림
-    @tasks.loop(time=time(hour=20, minute=10, second=0, tzinfo=KST))
-    async def alert_eight_to_ten(self) -> None:
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member, before, after):
+        now = datetime.now(tz=KST)
+
+        if time(20, 0, 0) <= now.time() <= time(23, 59, 59):
+            if before.channel is None and after.channel is not None:
+                self.voice_times[member.id] = now
+                logging.info(f'{member.name} 님이 {now}에 통화방에 참가했습니다')
+            elif before.channel is not None and after.channel is None:
+                if member.id in self.voice_times:
+                    join_time = self.voice_times.pop(member.id)
+                    time_spent = now - join_time
+                    logging.info(f'{member.name} 님이 통화방에서 퇴장하셨습니다. 접속 시간: {time_spent}')
+
+                    if time_spent >= timedelta(hours=2):
+                        if member.id not in self.two_hours_members:
+                            self.two_hours_members.append(member.id)
+                            logging.info(f'{member.name}이 2시간 이상 참가했습니다.')
+
+    # 20:30 지각자 알림
+    @tasks.loop(time=time(hour=20, minute=30, second=0, tzinfo=KST))
+    async def alert_late(self) -> None:
         try:
             if self.voice_channel is None or self.attendance_channel is None:
                 logging.warning("Voice channel 또는 notification channel이 설정되지 않았습니다.")
@@ -111,44 +128,46 @@ class Alert(commands.Cog):
             voice_channel_members = self.voice_channel.members
             logging.info(f'Voice channel members: {voice_channel_members}')
 
-            not_in_voice = [member for member in self.eight_to_ten_voters if member not in voice_channel_members]
+            not_in_voice = [member for member in self.attend_voters if member not in voice_channel_members]
             logging.info(f'Not in voice channel members: {not_in_voice}')
 
             mentions = ' '.join([f'<@{member.id}>' for member in not_in_voice])
             if len(not_in_voice) != 0:
-                await self.attendance_channel.send(f'{mentions} 20시 10분 입니다. 혹시 깜빡하셨나요?')
+                await self.attendance_channel.send(f'{mentions} 20시 30분 입니다. 혹시 깜빡하셨나요?')
         except Exception as e:
             logging.error(e)
 
-    # 21:30 22시 참가자 30분 전 알림
-    @tasks.loop(time=time(hour=21, minute=30, second=0, tzinfo=KST))
-    async def alert_attendance_ten(self) -> None:
-        if len(self.ten_to_twelve_voters) == 0:
-            logging.info('ten_to_twelve_voters is empty')
+    # 24:30 참가자 및 불참자 알림
+    @tasks.loop(time=time(hour=0, minute=30, second=0, tzinfo=KST))
+    async def alert_final_attendance(self) -> None:
+        if self.attendance_channel is None:
+            logging.warning("Attendance channel not set.")
             return
 
-        mentions = ' '.join([f'<@{member.id}>' for member in self.ten_to_twelve_voters])
-        await self.attendance_channel.send(f'{mentions} 22시 모각코 30분 전입니다!')
+        if len(self.attend_voters) == 0:
+            logging.info('참가 투표한 사람이 없습니다')
+            return
 
-    # 22:10 지각자 알림
-    @tasks.loop(time=time(hour=22, minute=10, second=0, tzinfo=KST))
-    async def alert_ten_to_twelve(self) -> None:
-        try:
-            if self.voice_channel is None or self.attendance_channel is None:
-                logging.warning("Voice channel 또는 notification channel이 설정되지 않았습니다.")
-                return
+        # 투표한 사용자 중 2시간 이상 음성 채널에 참여한 사용자
+        attended_members = [voter for voter in self.attend_voters if
+                            voter.id in [member.id for member in self.two_hours_members]]
 
-            voice_channel_members = self.voice_channel.members
-            logging.info(f'Voice channel members: {voice_channel_members}')
+        # 투표했지만 2시간 동안 참여하지 않은 사용자
+        not_attended_members = [voter for voter in self.attend_voters if
+                                voter.id not in [member.id for member in self.two_hours_members]]
 
-            not_in_voice = [member for member in self.ten_to_twelve_voters if member not in voice_channel_members]
-            logging.info(f'Not in voice channel members: {not_in_voice}')
+        if len(attended_members) > 0:
+            mentions_attended = ' '.join([f'<@{member.id}>' for member in attended_members])
+            await self.attendance_channel.send(f"20시부터 24시까지 2시간 이상 음성 채널에 참여한 사람들: {mentions_attended}")
+        else:
+            await self.attendance_channel.send("20시부터 24시까지 2시간 이상 음성 채널에 참여한 사람이 없습니다.")
 
-            mentions = ' '.join([f'<@{member.id}>' for member in not_in_voice])
-            if len(not_in_voice) != 0:
-                await self.attendance_channel.send(f'{mentions} 22시 10분 입니다. 혹시 깜빡하셨나요?')
-        except Exception as e:
-            logging.error(e)
+        if len(not_attended_members) > 0:
+            mentions_not_attended = ' '.join([f'<@{member.id}>' for member in not_attended_members])
+            await self.attendance_channel.send(f"{mentions_not_attended}, 투표했지만 2시간을 채우지 못했습니다. 다음에는 꼭 참석해주세요!")
+
+        self.two_hours_members.clear()
+        self.attend_voters.clear()
 
 
 async def setup(bot) -> None:
