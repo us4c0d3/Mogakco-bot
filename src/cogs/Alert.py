@@ -104,17 +104,17 @@ class Alert(commands.Cog):
 
         if time(20, 0, 0) <= now.time() <= time(23, 59, 59):
             if before.channel is None and after.channel is not None:
-                self.voice_times[member.id] = now
+                self.voice_times[member] = now
                 logging.info(f'{member.name} 님이 {now}에 통화방에 참가했습니다')
             elif before.channel is not None and after.channel is None:
-                if member.id in self.voice_times:
-                    join_time = self.voice_times.pop(member.id)
+                if member in self.voice_times:
+                    join_time = self.voice_times.pop(member)
                     time_spent = now - join_time
                     logging.info(f'{member.name} 님이 통화방에서 퇴장하셨습니다. 접속 시간: {time_spent}')
 
                     if time_spent >= timedelta(hours=2):
-                        if member.id not in self.two_hours_members:
-                            self.two_hours_members.append(member.id)
+                        if member not in self.two_hours_members:
+                            self.two_hours_members.append(member)
                             logging.info(f'{member.name}이 2시간 이상 참가했습니다.')
 
     # 20:30 지각자 알림
@@ -148,13 +148,9 @@ class Alert(commands.Cog):
             logging.info('참가 투표한 사람이 없습니다')
             return
 
-        # 투표한 사용자 중 2시간 이상 음성 채널에 참여한 사용자
-        attended_members = [voter for voter in self.attend_voters if
-                            voter.id in [member.id for member in self.two_hours_members]]
+        attended_members = [member for member in self.attend_voters if member in self.two_hours_members]
 
-        # 투표했지만 2시간 동안 참여하지 않은 사용자
-        not_attended_members = [voter for voter in self.attend_voters if
-                                voter.id not in [member.id for member in self.two_hours_members]]
+        not_attended_members = [member for member in self.attend_voters if member not in self.two_hours_members]
 
         if len(attended_members) > 0:
             mentions_attended = ' '.join([f'<@{member.id}>' for member in attended_members])
@@ -164,7 +160,7 @@ class Alert(commands.Cog):
 
         if len(not_attended_members) > 0:
             mentions_not_attended = ' '.join([f'<@{member.id}>' for member in not_attended_members])
-            await self.attendance_channel.send(f"{mentions_not_attended}, 투표했지만 2시간을 채우지 못했습니다. 다음에는 꼭 참석해주세요!")
+            await self.attendance_channel.send(f"{mentions_not_attended}, 투표했지만 2시간을 채우지 못했습니다.")
 
         self.two_hours_members.clear()
         self.attend_voters.clear()
