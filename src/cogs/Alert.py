@@ -116,6 +116,7 @@ class Alert(commands.Cog):
             formatted_time = self.format_time(self.voice_times[member])
             logging.info(f'{member.display_name} 님이 통화방에서 퇴장했습니다. 누적 접속 시간: {formatted_time}')
             await self.attendance_channel.send(f'<@{member.id}> 님의 현재까지 통화방 누적 접속 시간: {formatted_time}')
+            del self.join_time[member]
 
     # 20:30 지각자 알림
     @tasks.loop(time=time(hour=20, minute=30, second=0, tzinfo=KST))
