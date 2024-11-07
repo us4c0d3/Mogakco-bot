@@ -11,6 +11,7 @@ VOTE_CHANNEL_ID = os.getenv('VOTE_CHANNEL_ID')
 VOICE_CHANNEL_ID = os.getenv('VOICE_CHANNEL_ID')
 ATTENDANCE_CHANNEL_ID = os.getenv('ATTENDANCE_CHANNEL_ID')
 TEST_GUILD_ID = os.getenv('TEST_GUILD_ID')
+PARTICIPANT_ID = os.getenv('PARTICIPANT_ID')
 
 KST = timezone(timedelta(hours=9))
 
@@ -39,6 +40,7 @@ class Alert(commands.Cog):
 
         self.attend_voters = []
 
+        self.join_time = {}
         self.voice_times = {}
         self.two_hours_members = []
 
@@ -79,7 +81,7 @@ class Alert(commands.Cog):
                 logging.warning(f'Vote channel not set.')
                 return
 
-            await self.vote_channel.send('@everyone 투표 마감 30분 전입니다!')
+            await self.vote_channel.send(f'<@{PARTICIPANT_ID}> 투표 마감 30분 전입니다!')
 
         except Exception as e:
             logging.error(e)
@@ -91,7 +93,7 @@ class Alert(commands.Cog):
     # 19:30 20시 참가자 30분 전 알림
     @tasks.loop(time=time(hour=19, minute=30, second=0, tzinfo=KST))
     async def alert_attendance(self) -> None:
-        if len(self.attend_voters) == 0:
+        if not self.attend_voters:
             logging.info('attend_voters is empty')
             return
 
@@ -102,20 +104,19 @@ class Alert(commands.Cog):
     async def on_voice_state_update(self, member, before, after):
         now = datetime.now(tz=KST)
 
-        if time(20, 0, 0) <= now.time() <= time(23, 59, 59):
+        if time(19, 31, 0) <= now.time() <= time(23, 59, 59):
             if before.channel is None and after.channel is not None:
-                self.voice_times[member] = now
-                logging.info(f'{member.name} 님이 {now}에 통화방에 참가했습니다')
-            elif before.channel is not None and after.channel is None:
-                if member in self.voice_times:
-                    join_time = self.voice_times.pop(member)
-                    time_spent = now - join_time
-                    logging.info(f'{member.name} 님이 통화방에서 퇴장하셨습니다. 접속 시간: {time_spent}')
+                self.join_time[member]: datetime = now
+                logging.info(f'{member.display_name} 님이 {now}에 통화방에 참가했습니다')
 
-                    if time_spent >= timedelta(hours=2):
-                        if member not in self.two_hours_members:
-                            self.two_hours_members.append(member)
-                            logging.info(f'{member.name}이 2시간 이상 참가했습니다.')
+        if before.channel is None and after.channel is not None:
+            if member not in self.voice_times:
+                self.voice_times[member] = timedelta(0)
+            self.voice_times[member] += now - self.join_time[member]
+            formatted_time = self.format_time(self.voice_times[member])
+            logging.info(f'{member.display_name} 님이 통화방에서 퇴장했습니다. 누적 접속 시간: {formatted_time}')
+            await self.attendance_channel.send(f'<@{member.id}> 님의 현재까지 통화방 누적 접속 시간: {formatted_time}')
+            del self.join_time[member]
 
     # 20:30 지각자 알림
     @tasks.loop(time=time(hour=20, minute=30, second=0, tzinfo=KST))
@@ -131,8 +132,8 @@ class Alert(commands.Cog):
             not_in_voice = [member for member in self.attend_voters if member not in voice_channel_members]
             logging.info(f'Not in voice channel members: {not_in_voice}')
 
-            mentions = ' '.join([f'<@{member.id}>' for member in not_in_voice])
-            if len(not_in_voice) != 0:
+            if not_in_voice:
+                mentions = ' '.join([f'<@{member.id}>' for member in not_in_voice])
                 await self.attendance_channel.send(f'{mentions} 20시 30분 입니다. 혹시 깜빡하셨나요?')
         except Exception as e:
             logging.error(e)
@@ -144,26 +145,53 @@ class Alert(commands.Cog):
             logging.warning("Attendance channel not set.")
             return
 
-        if len(self.attend_voters) == 0:
+        if not self.attend_voters:
             logging.info('참가 투표한 사람이 없습니다')
             return
 
-        attended_members = [member for member in self.attend_voters if member in self.two_hours_members]
+        now = datetime.now(tz=KST)
 
-        not_attended_members = [member for member in self.attend_voters if member not in self.two_hours_members]
+        attended_members = []
+        not_attended_members = []
 
-        if len(attended_members) > 0:
+        for member in self.attend_voters:
+            # 접속 중인 사람은 현재 시간으로 계산하여 누적 시간 갱신
+            if member in self.voice_channel.members:
+                if member in self.voice_times:
+                    self.voice_times[member] += now - self.join_time[member]
+                else:
+                    self.voice_times[member] = now - self.join_time[member]
+
+                # 누적 시간이 2시간 이상인지 체크
+                if self.voice_times[member] >= timedelta(hours=2):
+                    attended_members.append(member)
+                else:
+                    not_attended_members.append(member)
+
+            # 통화방에 없는 사람은 기존에 기록된 시간 기준으로 분류
+            else:
+                if member in self.voice_times and self.voice_times[member] >= timedelta(hours=2):
+                    attended_members.append(member)
+                else:
+                    not_attended_members.append(member)
+
+        if attended_members:
             mentions_attended = ' '.join([f'<@{member.id}>' for member in attended_members])
             await self.attendance_channel.send(f"20시부터 24시까지 2시간 이상 음성 채널에 참여한 사람들: {mentions_attended}")
-        else:
-            await self.attendance_channel.send("20시부터 24시까지 2시간 이상 음성 채널에 참여한 사람이 없습니다.")
 
-        if len(not_attended_members) > 0:
+        if not_attended_members:
             mentions_not_attended = ' '.join([f'<@{member.id}>' for member in not_attended_members])
-            await self.attendance_channel.send(f"{mentions_not_attended}, 투표했지만 2시간을 채우지 못했습니다.")
+            await self.attendance_channel.send(f"투표한 사람 중 2시간을 채우지 못한 사람들: {mentions_not_attended}")
 
+        self.join_time.clear()
+        self.voice_times.clear()
         self.two_hours_members.clear()
         self.attend_voters.clear()
+
+    def format_time(self, delta: timedelta) -> str:
+        hours, remainder = divmod(delta.total_seconds(), 3600)
+        minutes = remainder // 60
+        return f'{hours}시간 {minutes}분'
 
 
 async def setup(bot) -> None:
