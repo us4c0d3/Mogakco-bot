@@ -174,8 +174,6 @@ class Alert(commands.Cog):
         if attended_members:
             mentions_attended = ' '.join([f'<@{member.id}>' for member in attended_members])
             await self.attendance_channel.send(f"20시부터 24시까지 2시간 이상 음성 채널에 참여한 사람들: {mentions_attended}")
-        else:
-            await self.attendance_channel.send("20시부터 24시까지 2시간 이상 음성 채널에 참여한 사람이 없습니다.")
 
         if not_attended_members:
             mentions_not_attended = ' '.join([f'<@{member.id}>' for member in not_attended_members])
