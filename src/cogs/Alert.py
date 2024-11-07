@@ -177,7 +177,7 @@ class Alert(commands.Cog):
 
         if not_attended_members:
             mentions_not_attended = ' '.join([f'<@{member.id}>' for member in not_attended_members])
-            await self.attendance_channel.send(f"{mentions_not_attended}, 투표했지만 2시간을 채우지 못했습니다.")
+            await self.attendance_channel.send(f"투표한 사람 중 2시간을 채우지 못한 사람들: {mentions_not_attended}")
 
         self.voice_times.clear()
         self.two_hours_members.clear()
