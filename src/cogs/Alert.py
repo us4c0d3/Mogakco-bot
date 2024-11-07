@@ -40,6 +40,7 @@ class Alert(commands.Cog):
 
         self.attend_voters = []
 
+        self.join_time = {}
         self.voice_times = {}
         self.two_hours_members = []
 
@@ -105,15 +106,16 @@ class Alert(commands.Cog):
 
         if time(19, 31, 0) <= now.time() <= time(23, 59, 59):
             if before.channel is None and after.channel is not None:
-                self.voice_times[member] = self.voice_times.get(member, timedelta(0)) + (
-                        now - self.voice_times.get(member, now))
+                self.join_time[member] = now
                 logging.info(f'{member.display_name} 님이 {now}에 통화방에 참가했습니다')
 
         if before.channel is None and after.channel is not None:
-            if member in self.voice_times:
-                accumulated_time = self.voice_times[member]
-                logging.info(f'{member.display_name} 님이 통화방에서 퇴장했습니다. 누적 접속 시간: {accumulated_time}')
-                await self.attendance_channel.send(f'<@{member.id}> 님의 현재까지 통화방 누적 접속 시간: {accumulated_time}')
+            if member not in self.voice_times:
+                self.voice_times[member] = timedelta(0)
+            self.voice_times[member] += now - self.join_time[member]
+            formatted_time = self.voice_times[member].strftime("%H시간 %M분")
+            logging.info(f'{member.display_name} 님이 통화방에서 퇴장했습니다. 누적 접속 시간: {formatted_time}')
+            await self.attendance_channel.send(f'<@{member.id}> 님의 현재까지 통화방 누적 접속 시간: {formatted_time}')
 
     # 20:30 지각자 알림
     @tasks.loop(time=time(hour=20, minute=30, second=0, tzinfo=KST))
