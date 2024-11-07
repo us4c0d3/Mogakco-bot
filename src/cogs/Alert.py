@@ -189,9 +189,9 @@ class Alert(commands.Cog):
         self.attend_voters.clear()
 
     def format_time(self, delta: timedelta) -> str:
-        hour = delta.days * 24 + delta.seconds // 3600
-        minute = (delta.seconds % 3600) // 60
-        return f'{hour}시간 {minute}분'
+        hours, remainder = divmod(delta.total_seconds(), 3600)
+        minutes = remainder // 60
+        return f'{hours}시간 {minutes}분'
 
 
 async def setup(bot) -> None:
