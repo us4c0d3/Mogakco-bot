@@ -146,8 +146,30 @@ class Alert(commands.Cog):
             logging.info('참가 투표한 사람이 없습니다')
             return
 
+        now = datetime.now(tz=KST)
+
         attended_members = [member for member in self.attend_voters if member in self.two_hours_members]
         not_attended_members = [member for member in self.attend_voters if member not in self.two_hours_members]
+
+        for member in self.attend_voters:
+            # 접속 중인 사람은 현재 시간으로 계산하여 누적 시간 갱신
+            if member in self.voice_channel.members:
+                if member in self.voice_times:
+                    self.voice_times[member] += (now - self.voice_times[member].last_checked)
+                    self.voice_times[member].last_checked = now
+
+                # 누적 시간이 2시간 이상인지 체크
+                if self.voice_times[member] >= timedelta(hours=2):
+                    attended_members.append(member)
+                else:
+                    not_attended_members.append(member)
+
+            # 통화방에 없는 사람은 기존에 기록된 시간 기준으로 분류
+            else:
+                if member in self.voice_times and self.voice_times[member] >= timedelta(hours=2):
+                    attended_members.append(member)
+                else:
+                    not_attended_members.append(member)
 
         if len(attended_members) > 0:
             mentions_attended = ' '.join([f'<@{member.id}>' for member in attended_members])
