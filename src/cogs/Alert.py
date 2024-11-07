@@ -157,8 +157,9 @@ class Alert(commands.Cog):
             # 접속 중인 사람은 현재 시간으로 계산하여 누적 시간 갱신
             if member in self.voice_channel.members:
                 if member in self.voice_times:
-                    self.voice_times[member] += (now - self.voice_times[member].last_checked)
-                    self.voice_times[member].last_checked = now
+                    self.voice_times[member] += now - self.join_time[member]
+                else:
+                    self.voice_times[member] = now - self.join_time[member]
 
                 # 누적 시간이 2시간 이상인지 체크
                 if self.voice_times[member] >= timedelta(hours=2):
@@ -181,6 +182,7 @@ class Alert(commands.Cog):
             mentions_not_attended = ' '.join([f'<@{member.id}>' for member in not_attended_members])
             await self.attendance_channel.send(f"투표한 사람 중 2시간을 채우지 못한 사람들: {mentions_not_attended}")
 
+        self.join_time.clear()
         self.voice_times.clear()
         self.two_hours_members.clear()
         self.attend_voters.clear()
