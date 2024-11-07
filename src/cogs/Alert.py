@@ -148,8 +148,8 @@ class Alert(commands.Cog):
 
         now = datetime.now(tz=KST)
 
-        attended_members = [member for member in self.attend_voters if member in self.two_hours_members]
-        not_attended_members = [member for member in self.attend_voters if member not in self.two_hours_members]
+        attended_members = []
+        not_attended_members = []
 
         for member in self.attend_voters:
             # 접속 중인 사람은 현재 시간으로 계산하여 누적 시간 갱신
