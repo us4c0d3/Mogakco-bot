@@ -108,11 +108,12 @@ class Alert(commands.Cog):
                 self.voice_times[member] = self.voice_times.get(member, timedelta(0)) + (
                         now - self.voice_times.get(member, now))
                 logging.info(f'{member.display_name} 님이 {now}에 통화방에 참가했습니다')
-            elif before.channel is not None and after.channel is None:
-                if member in self.voice_times:
-                    accumulated_time = self.voice_times[member]
-                    logging.info(f'{member.display_name} 님이 통화방에서 퇴장했습니다. 누적 접속 시간: {accumulated_time}')
-                    await self.attendance_channel.send(f'<@{member.id}> 님의 현재까지 통화방 누적 접속 시간: {accumulated_time}')
+
+        if before.channel is None and after.channel is not None:
+            if member in self.voice_times:
+                accumulated_time = self.voice_times[member]
+                logging.info(f'{member.display_name} 님이 통화방에서 퇴장했습니다. 누적 접속 시간: {accumulated_time}')
+                await self.attendance_channel.send(f'<@{member.id}> 님의 현재까지 통화방 누적 접속 시간: {accumulated_time}')
 
     # 20:30 지각자 알림
     @tasks.loop(time=time(hour=20, minute=30, second=0, tzinfo=KST))
@@ -141,12 +142,11 @@ class Alert(commands.Cog):
             logging.warning("Attendance channel not set.")
             return
 
-        if len(self.attend_voters) == 0:
+        if not self.attend_voters:
             logging.info('참가 투표한 사람이 없습니다')
             return
 
         attended_members = [member for member in self.attend_voters if member in self.two_hours_members]
-
         not_attended_members = [member for member in self.attend_voters if member not in self.two_hours_members]
 
         if len(attended_members) > 0:
