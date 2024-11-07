@@ -93,7 +93,7 @@ class Alert(commands.Cog):
     # 19:30 20시 참가자 30분 전 알림
     @tasks.loop(time=time(hour=19, minute=30, second=0, tzinfo=KST))
     async def alert_attendance(self) -> None:
-        if len(self.attend_voters) == 0:
+        if not self.attend_voters:
             logging.info('attend_voters is empty')
             return
 
@@ -131,8 +131,8 @@ class Alert(commands.Cog):
             not_in_voice = [member for member in self.attend_voters if member not in voice_channel_members]
             logging.info(f'Not in voice channel members: {not_in_voice}')
 
-            mentions = ' '.join([f'<@{member.id}>' for member in not_in_voice])
-            if len(not_in_voice) != 0:
+            if not_in_voice:
+                mentions = ' '.join([f'<@{member.id}>' for member in not_in_voice])
                 await self.attendance_channel.send(f'{mentions} 20시 30분 입니다. 혹시 깜빡하셨나요?')
         except Exception as e:
             logging.error(e)
