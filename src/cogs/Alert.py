@@ -11,6 +11,7 @@ VOTE_CHANNEL_ID = os.getenv('VOTE_CHANNEL_ID')
 VOICE_CHANNEL_ID = os.getenv('VOICE_CHANNEL_ID')
 ATTENDANCE_CHANNEL_ID = os.getenv('ATTENDANCE_CHANNEL_ID')
 TEST_GUILD_ID = os.getenv('TEST_GUILD_ID')
+PARTICIPANT_ID = os.getenv('PARTICIPANT_ID')
 
 KST = timezone(timedelta(hours=9))
 
@@ -79,7 +80,7 @@ class Alert(commands.Cog):
                 logging.warning(f'Vote channel not set.')
                 return
 
-            await self.vote_channel.send('@everyone 투표 마감 30분 전입니다!')
+            await self.vote_channel.send(f'<@{PARTICIPANT_ID}> 투표 마감 30분 전입니다!')
 
         except Exception as e:
             logging.error(e)
