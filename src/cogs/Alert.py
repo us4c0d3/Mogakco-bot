@@ -191,7 +191,7 @@ class Alert(commands.Cog):
     def format_time(self, delta: timedelta) -> str:
         hours, remainder = divmod(delta.total_seconds(), 3600)
         minutes = remainder // 60
-        return f'{hours}시간 {minutes}분'
+        return f'{int(hours)}시간 {int(minutes)}분'
 
 
 async def setup(bot) -> None:
