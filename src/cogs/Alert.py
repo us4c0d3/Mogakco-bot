@@ -109,7 +109,7 @@ class Alert(commands.Cog):
                 self.join_time[member]: datetime = now
                 logging.info(f'{member.display_name} 님이 {now}에 통화방에 참가했습니다')
 
-        if before.channel is None and after.channel is not None:
+        if after.channel is None and before.channel is not None:
             if member not in self.voice_times:
                 self.voice_times[member] = timedelta(0)
             self.voice_times[member] += now - self.join_time[member]
