@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-VOTE_CHANNEL_ID = os.getenv('VOTE_CHANNEL_ID')
 VOICE_CHANNEL_ID = os.getenv('VOICE_CHANNEL_ID')
 ATTENDANCE_CHANNEL_ID = os.getenv('ATTENDANCE_CHANNEL_ID')
 TEST_GUILD_ID = os.getenv('TEST_GUILD_ID')
@@ -26,9 +25,6 @@ class Alert(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot = bot
 
-        self.vote_channel_id = int(VOTE_CHANNEL_ID)
-        self.vote_channel = None
-
         self.voice_channel_id = int(VOICE_CHANNEL_ID)
         self.voice_channel = None
 
@@ -42,14 +38,8 @@ class Alert(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.vote_channel = self.bot.get_channel(self.vote_channel_id)
         self.voice_channel = self.bot.get_channel(self.voice_channel_id)
         self.attendance_channel = self.bot.get_channel(self.attendance_channel_id)
-
-        if self.vote_channel:
-            logging.info(f'Default vote channel set to: {self.vote_channel.name} (ID: {self.vote_channel.id})')
-        else:
-            logging.warning(f'Channel with ID {self.vote_channel_id} not found.')
 
         if self.voice_channel:
             logging.info(f'Default voice channel set to: {self.voice_channel.name} (ID: {self.voice_channel.id})')
