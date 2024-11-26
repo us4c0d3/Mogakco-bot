@@ -37,6 +37,7 @@ class Alert(commands.Cog):
 
         self.join_time = {}
         self.voice_times = {}
+        self.today_members = []
         self.two_hours_members = []
 
     @commands.Cog.listener()
@@ -61,9 +62,7 @@ class Alert(commands.Cog):
         else:
             logging.warning(f'Channel with ID {self.attendance_channel_id} not found.')
 
-        self.alert_vote_end.start()
         self.alert_attendance.start()
-        self.alert_late.start()
         self.alert_final_attendance.start()
 
         logging.info('Alert.py is ready')
@@ -81,6 +80,8 @@ class Alert(commands.Cog):
             if before.channel is None and after.channel is not None:
                 self.join_time[member]: datetime = now
                 logging.info(f'{member.display_name} 님이 {now}에 통화방에 참가했습니다')
+                if member not in self.today_members:
+                    self.today_members.append(member)
 
         if after.channel is None and before.channel is not None:
             if member not in self.voice_times:
@@ -88,54 +89,43 @@ class Alert(commands.Cog):
             self.voice_times[member] += now - self.join_time[member]
             formatted_time = self.format_time(self.voice_times[member])
             logging.info(f'{member.display_name} 님이 통화방에서 퇴장했습니다. 누적 접속 시간: {formatted_time}')
-            await self.attendance_channel.send(f'<@{member.id}> 님의 현재까지 통화방 누적 접속 시간: {formatted_time}')
+            await self.attendance_channel.send(f'<@{member.id}> 님의 오늘 통화방 누적 접속 시간: {formatted_time}')
             del self.join_time[member]
 
-    #
-    # # 24:30 참가자 및 불참자 알림
-    # @tasks.loop(time=time(hour=0, minute=30, second=0, tzinfo=KST))
-    # async def alert_final_attendance(self) -> None:
-    #     if self.attendance_channel is None:
-    #         logging.warning("Attendance channel not set.")
-    #         return
-    #
-    #     now = datetime.now(tz=KST)
-    #
-    #     attended_members = []
-    #     not_attended_members = []
-    #
-    #     for member in self.attend_voters:
-    #         # 접속 중인 사람은 현재 시간으로 계산하여 누적 시간 갱신
-    #         if member in self.voice_channel.members:
-    #             if member in self.voice_times:
-    #                 self.voice_times[member] += now - self.join_time[member]
-    #             else:
-    #                 self.voice_times[member] = now - self.join_time[member]
-    #
-    #             # 누적 시간이 2시간 이상인지 체크
-    #             if self.voice_times[member] >= timedelta(hours=2):
-    #                 attended_members.append(member)
-    #             else:
-    #                 not_attended_members.append(member)
-    #
-    #         # 통화방에 없는 사람은 기존에 기록된 시간 기준으로 분류
-    #         else:
-    #             if member in self.voice_times and self.voice_times[member] >= timedelta(hours=2):
-    #                 attended_members.append(member)
-    #             else:
-    #                 not_attended_members.append(member)
-    #
-    #     if attended_members:
-    #         mentions_attended = ' '.join([f'<@{member.id}>' for member in attended_members])
-    #         await self.attendance_channel.send(f"20시부터 24시까지 2시간 이상 음성 채널에 참여한 사람들: {mentions_attended}")
-    #
-    #     if not_attended_members:
-    #         mentions_not_attended = ' '.join([f'<@{member.id}>' for member in not_attended_members])
-    #         await self.attendance_channel.send(f"투표한 사람 중 2시간을 채우지 못한 사람들: {mentions_not_attended}")
-    #
-    #     self.join_time.clear()
-    #     self.voice_times.clear()
-    #     self.two_hours_members.clear()
+    # 24:30 1시간 이상 참가자 알림
+    @tasks.loop(time=time(hour=0, minute=30, second=0, tzinfo=KST))
+    async def alert_final_attendance(self) -> None:
+        if self.attendance_channel is None:
+            logging.warning("Attendance channel not set.")
+            return
+
+        now = datetime.now(tz=KST)
+        complete_members = []
+
+        for member in self.today_members:
+            if member in self.voice_channel.members:
+                if member in self.voice_times:
+                    self.voice_times[member] += now - self.join_time[member]
+                else:
+                    self.voice_times[member] = now - self.join_time[member]
+
+                if self.voice_times[member] >= timedelta(hours=1) and PARTICIPANT_ID in member.roles:
+                    complete_members.append((member, self.voice_times[member]))
+
+            else:
+                if (member in self.voice_times
+                        and self.voice_times[member] >= timedelta(hours=1)
+                        and PARTICIPANT_ID in member.roles):
+                    complete_members.append((member, self.voice_times[member]))
+
+        if complete_members:
+            mentions_attended = ' '.join([f'<@{member.id}>' for member, _ in complete_members])
+            await self.attendance_channel.send(f"20시부터 24시까지 1시간 이상 음성 채널에 참여한 사람들: {mentions_attended}")
+
+        self.join_time.clear()
+        self.voice_times.clear()
+        self.today_members.clear()
+        self.two_hours_members.clear()
 
     def format_time(self, delta: timedelta) -> str:
         hours, remainder = divmod(delta.total_seconds(), 3600)
