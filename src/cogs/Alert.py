@@ -1,5 +1,6 @@
 import logging
 import os
+from collections import defaultdict
 from datetime import timedelta, timezone, time, datetime
 
 from discord.ext import commands, tasks
@@ -10,7 +11,7 @@ load_dotenv()
 VOICE_CHANNEL_ID = os.getenv('VOICE_CHANNEL_ID')
 ATTENDANCE_CHANNEL_ID = os.getenv('ATTENDANCE_CHANNEL_ID')
 TEST_GUILD_ID = os.getenv('TEST_GUILD_ID')
-PARTICIPANT_ID = os.getenv('PARTICIPANT_ID')
+PARTICIPANT_ID = int(os.getenv('PARTICIPANT_ID'))
 
 KST = timezone(timedelta(hours=9))
 
@@ -32,9 +33,8 @@ class Alert(commands.Cog):
         self.attendance_channel = None
 
         self.join_time = {}
-        self.voice_times = {}
+        self.voice_times = defaultdict(timedelta)
         self.today_members = []
-        self.two_hours_members = []
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -73,14 +73,17 @@ class Alert(commands.Cog):
                 if member not in self.today_members:
                     self.today_members.append(member)
 
-        if after.channel is None and before.channel is not None:
-            if member not in self.voice_times:
-                self.voice_times[member] = timedelta(0)
-            self.voice_times[member] += now - self.join_time[member]
-            formatted_time = self.format_time(self.voice_times[member])
-            logging.info(f'{member.display_name} 님이 통화방에서 퇴장했습니다. 누적 접속 시간: {formatted_time}')
-            await self.attendance_channel.send(f'<@{member.id}> 님의 오늘 통화방 누적 접속 시간: {formatted_time}')
-            del self.join_time[member]
+        elif after.channel is None and before.channel is not None:
+            if member in self.join_time:
+                elapsed_time = now - self.join_time.pop(member)  # Safely pop join time
+                self.voice_times[member] += elapsed_time
+                formatted_time = self.format_time(self.voice_times[member])
+                logging.info(f'{member.display_name} 님이 통화방에서 퇴장했습니다. 누적 접속 시간: {formatted_time}')
+                await self.attendance_channel.send(
+                    f'<@{member.id}> 님의 오늘 통화방 누적 접속 시간: {formatted_time}'
+                )
+            else:
+                logging.warning(f'join_time for {member.display_name} not found. Skipping calculation.')
 
     # 24:30 1시간 이상 참가자 알림
     @tasks.loop(time=time(hour=0, minute=30, second=0, tzinfo=KST))
@@ -94,28 +97,24 @@ class Alert(commands.Cog):
 
         for member in self.today_members:
             if member in self.voice_channel.members:
-                if member in self.voice_times:
+                if member in self.join_time:
                     self.voice_times[member] += now - self.join_time[member]
                 else:
-                    self.voice_times[member] = now - self.join_time[member]
+                    logging.warning(f'Member {member.display_name} has no join_time. Skipping.')
 
-                if self.voice_times[member] >= timedelta(hours=1) and PARTICIPANT_ID in member.roles:
-                    complete_members.append((member, self.voice_times[member]))
-
-            else:
-                if (member in self.voice_times
-                        and self.voice_times[member] >= timedelta(hours=1)
-                        and PARTICIPANT_ID in member.roles):
-                    complete_members.append((member, self.voice_times[member]))
+            if self.voice_times[member] >= timedelta(hours=1) and any(role.id == PARTICIPANT_ID for role in member.roles):
+                complete_members.append((member, self.voice_times[member]))
 
         if complete_members:
-            mentions_attended = ' '.join([f'<@{member.id}>' for member, _ in complete_members])
-            await self.attendance_channel.send(f"20시부터 24시까지 1시간 이상 음성 채널에 참여한 사람들: {mentions_attended}")
+            mentions = ' '.join([f'<@{member.id}>' for member, _ in complete_members])
+            await self.attendance_channel.send(f"20시부터 24시까지 1시간 이상 음성 채널에 참여한 사람들: {mentions}")
 
+        self._reset_daily_data()
+
+    def _reset_daily_data(self):
         self.join_time.clear()
         self.voice_times.clear()
         self.today_members.clear()
-        self.two_hours_members.clear()
 
     def format_time(self, delta: timedelta) -> str:
         hours, remainder = divmod(delta.total_seconds(), 3600)
