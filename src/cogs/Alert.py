@@ -83,7 +83,7 @@ class Alert(commands.Cog):
                     f'<@{member.id}> 님의 오늘 통화방 누적 접속 시간: {formatted_time}'
                 )
             else:
-                logging.warning(f'join_time에서 {member.display_name}를 찾을 수 없습니다.')
+                logging.info(f'join_time에서 {member.display_name}를 찾을 수 없습니다; 19:31~23:59에 통화방에 접속하지 않았습니다.')
 
     # 24:30 1시간 이상 참가자 알림
     @tasks.loop(time=time(hour=0, minute=30, second=0, tzinfo=KST))
