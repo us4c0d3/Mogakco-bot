@@ -8,10 +8,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-VOICE_CHANNEL_ID = os.getenv('VOICE_CHANNEL_ID')
-ATTENDANCE_CHANNEL_ID = os.getenv('ATTENDANCE_CHANNEL_ID')
-TEST_GUILD_ID = os.getenv('TEST_GUILD_ID')
-PARTICIPANT_ID = int(os.getenv('PARTICIPANT_ID'))
+try:
+    VOICE_CHANNEL_ID = int(os.getenv('VOICE_CHANNEL_ID'))
+    ATTENDANCE_CHANNEL_ID = int(os.getenv('ATTENDANCE_CHANNEL_ID'))
+    TEST_GUILD_ID = int(os.getenv('TEST_GUILD_ID'))
+    PARTICIPANT_ID = int(os.getenv('PARTICIPANT_ID'))
+except (TypeError, ValueError):
+    raise RuntimeError("Environment variables are not properly set.")
 
 KST = timezone(timedelta(hours=9))
 
@@ -26,31 +29,28 @@ class Alert(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot = bot
 
-        self.voice_channel_id = int(VOICE_CHANNEL_ID)
         self.voice_channel = None
-
-        self.attendance_channel_id = int(ATTENDANCE_CHANNEL_ID)
         self.attendance_channel = None
 
         self.join_time = {}
         self.voice_times = defaultdict(timedelta)
-        self.today_members = []
+        self.today_members = set()
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.voice_channel = self.bot.get_channel(self.voice_channel_id)
-        self.attendance_channel = self.bot.get_channel(self.attendance_channel_id)
+        self.voice_channel = self.bot.get_channel(VOICE_CHANNEL_ID)
+        self.attendance_channel = self.bot.get_channel(ATTENDANCE_CHANNEL_ID)
 
         if self.voice_channel:
             logging.info(f'Default voice channel set to: {self.voice_channel.name} (ID: {self.voice_channel.id})')
         else:
-            logging.warning(f'Channel with ID {self.voice_channel_id} not found.')
+            logging.warning(f'Channel with ID {VOICE_CHANNEL_ID} not found.')
 
         if self.attendance_channel:
             logging.info(f'Default attendance channel set to: '
                          f'{self.attendance_channel.name} (ID: {self.attendance_channel.id})')
         else:
-            logging.warning(f'Channel with ID {self.attendance_channel_id} not found.')
+            logging.warning(f'Channel with ID {ATTENDANCE_CHANNEL_ID} not found.')
 
         self.alert_attendance.start()
         self.alert_final_attendance.start()
