@@ -66,12 +66,12 @@ class Alert(commands.Cog):
     async def on_voice_state_update(self, member, before, after):
         now = datetime.now(tz=KST)
 
-        if time(19, 31, 0) <= now.time() <= time(23, 59, 59):
-            if before.channel is None and after.channel is not None:
-                self.join_time[member]: datetime = now
-                logging.info(f'{member.display_name} 님이 {now}에 통화방에 참가했습니다')
-                if member not in self.today_members:
-                    self.today_members.append(member)
+        if (before.channel is None and after.channel is not None
+                and time(19, 31, 0) <= now.time() <= time(23, 59, 59)):
+            self.join_time[member]: datetime = now
+            logging.info(f'{member.display_name} 님이 {now}에 통화방에 참가했습니다')
+            if member not in self.today_members:
+                self.today_members.append(member)
 
         if after.channel is None and before.channel is not None:
             if member in self.join_time:
