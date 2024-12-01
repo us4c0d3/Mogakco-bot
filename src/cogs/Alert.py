@@ -73,9 +73,9 @@ class Alert(commands.Cog):
                 if member not in self.today_members:
                     self.today_members.append(member)
 
-        elif after.channel is None and before.channel is not None:
+        if after.channel is None and before.channel is not None:
             if member in self.join_time:
-                elapsed_time = now - self.join_time.pop(member)  # Safely pop join time
+                elapsed_time = now - self.join_time.pop(member)
                 self.voice_times[member] += elapsed_time
                 formatted_time = self.format_time(self.voice_times[member])
                 logging.info(f'{member.display_name} 님이 통화방에서 퇴장했습니다. 누적 접속 시간: {formatted_time}')
@@ -83,7 +83,7 @@ class Alert(commands.Cog):
                     f'<@{member.id}> 님의 오늘 통화방 누적 접속 시간: {formatted_time}'
                 )
             else:
-                logging.warning(f'join_time for {member.display_name} not found. Skipping calculation.')
+                logging.warning(f'join_time에서 {member.display_name}를 찾을 수 없습니다.')
 
     # 24:30 1시간 이상 참가자 알림
     @tasks.loop(time=time(hour=0, minute=30, second=0, tzinfo=KST))
