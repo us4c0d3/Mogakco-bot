@@ -70,8 +70,7 @@ class Alert(commands.Cog):
                 and time(19, 31, 0) <= now.time() <= time(23, 59, 59)):
             self.join_time[member]: datetime = now
             logging.info(f'{member.display_name} 님이 {now}에 통화방에 참가했습니다')
-            if member not in self.today_members:
-                self.today_members.append(member)
+            self.today_members.add(member)
 
         if after.channel is None and before.channel is not None:
             if member in self.join_time:
