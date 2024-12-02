@@ -116,6 +116,9 @@ class Alert(commands.Cog):
             mentions = ' '.join([f'<@{member.id}>' for member, _ in complete_members])
             await self.attendance_channel.send(f"20시부터 24시까지 1시간 이상 음성 채널에 참여한 사람들: {mentions}")
 
+        if len(self.join_time):
+            logging.info(f'join_time에 사람이 남아있습니다. join_time: {self.join_time}')
+
         self._reset_daily_data()
 
     def _reset_daily_data(self):
