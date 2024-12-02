@@ -97,11 +97,15 @@ class Alert(commands.Cog):
         for member in self.today_members:
             if member in self.voice_channel.members:
                 if member in self.join_time:
-                    self.voice_times[member] += now - self.join_time[member]
+                    elapsed_time = now - self.join_time[member]
+                    self.voice_times[member] += elapsed_time
+                    formatted_time = self.format_time(self.voice_times[member])
+                    logging.info(f'{member.display_name} 님 통화방 누적 시간 계산. 누적 접속 시간: {formatted_time}')
                 else:
                     logging.info(f'Member {member.display_name} has no join_time. Skipping.')
 
-            if self.voice_times[member] >= timedelta(hours=1) and any(role.id == PARTICIPANT_ID for role in member.roles):
+            if (self.voice_times[member] >= timedelta(hours=1)
+                    and any(role.id == PARTICIPANT_ID for role in member.roles)):
                 complete_members.append((member, self.voice_times[member]))
 
         if complete_members:
