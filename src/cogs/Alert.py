@@ -97,16 +97,27 @@ class Alert(commands.Cog):
         for member in self.today_members:
             if member in self.voice_channel.members:
                 if member in self.join_time:
-                    self.voice_times[member] += now - self.join_time[member]
+                    elapsed_time = now - self.join_time[member]
+                    self.voice_times[member] += elapsed_time
+                    formatted_time = self.format_time(self.voice_times[member])
+                    logging.info(f'{member.display_name} 님 통화방 누적 시간 계산. 누적 접속 시간: {formatted_time}')
+                    await self.attendance_channel.send(
+                        f'<@{member.id}> 님의 오늘 통화방 누적 접속 시간: {formatted_time}'
+                    )
+                    self.join_time.pop(member)
                 else:
-                    logging.warning(f'Member {member.display_name} has no join_time. Skipping.')
+                    logging.info(f'Member {member.display_name} has no join_time. Skipping.')
 
-            if self.voice_times[member] >= timedelta(hours=1) and any(role.id == PARTICIPANT_ID for role in member.roles):
+            if (self.voice_times[member] >= timedelta(hours=1)
+                    and any(role.id == PARTICIPANT_ID for role in member.roles)):
                 complete_members.append((member, self.voice_times[member]))
 
         if complete_members:
             mentions = ' '.join([f'<@{member.id}>' for member, _ in complete_members])
             await self.attendance_channel.send(f"20시부터 24시까지 1시간 이상 음성 채널에 참여한 사람들: {mentions}")
+
+        if len(self.join_time):
+            logging.info(f'join_time에 사람이 남아있습니다. join_time: {self.join_time}')
 
         self._reset_daily_data()
 
