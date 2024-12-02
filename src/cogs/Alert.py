@@ -99,7 +99,7 @@ class Alert(commands.Cog):
                 if member in self.join_time:
                     self.voice_times[member] += now - self.join_time[member]
                 else:
-                    logging.warning(f'Member {member.display_name} has no join_time. Skipping.')
+                    logging.info(f'Member {member.display_name} has no join_time. Skipping.')
 
             if self.voice_times[member] >= timedelta(hours=1) and any(role.id == PARTICIPANT_ID for role in member.roles):
                 complete_members.append((member, self.voice_times[member]))
