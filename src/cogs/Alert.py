@@ -1,10 +1,11 @@
 import logging
 import os
-from collections import defaultdict
 from datetime import timedelta, timezone, time, datetime
 
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
+
+from src.service.AlertService import AlertService
 
 load_dotenv()
 
@@ -32,9 +33,7 @@ class Alert(commands.Cog):
         self.voice_channel = None
         self.attendance_channel = None
 
-        self.join_time = {}
-        self.voice_times = defaultdict(timedelta)
-        self.today_members = set()
+        self.alertService = AlertService(participant_role_id=PARTICIPANT_ID, tz=KST)
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -60,7 +59,7 @@ class Alert(commands.Cog):
     # 19:30 20시 참가자 30분 전 알림
     @tasks.loop(time=time(hour=19, minute=30, second=0, tzinfo=KST))
     async def alert_attendance(self) -> None:
-        await self.attendance_channel.send(f'<@&{PARTICIPANT_ID}> 20시 모각코 30분 전입니다!')
+        await self.attendance_channel.send(f'<@&{self.participant_role_id}> 20시 모각코 30분 전입니다!')
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
@@ -68,15 +67,13 @@ class Alert(commands.Cog):
 
         if (before.channel is None and after.channel is not None
                 and time(19, 31, 0) <= now.time() <= time(23, 59, 59)):
-            self.join_time[member]: datetime = now
+            self.alertService.track_join(member, now)
             logging.info(f'{member.display_name} 님이 {now}에 통화방에 참가했습니다')
-            self.today_members.add(member)
 
         if after.channel is None and before.channel is not None:
-            if member in self.join_time:
-                elapsed_time = now - self.join_time.pop(member)
-                self.voice_times[member] += elapsed_time
-                formatted_time = self.format_time(self.voice_times[member])
+            elapsed_time = self.alertService.track_leave(member, now)
+            if elapsed_time:
+                formatted_time = self.alertService.format_time(elapsed_time)
                 logging.info(f'{member.display_name} 님이 통화방에서 퇴장했습니다. 누적 접속 시간: {formatted_time}')
                 await self.attendance_channel.send(
                     f'<@{member.id}> 님의 오늘 통화방 누적 접속 시간: {formatted_time}'
@@ -86,50 +83,25 @@ class Alert(commands.Cog):
 
     # 24:30 1시간 이상 참가자 알림
     @tasks.loop(time=time(hour=0, minute=30, second=0, tzinfo=KST))
-    async def alert_final_attendance(self) -> None:
+    async def alert_final_attendees(self) -> None:
         if self.attendance_channel is None:
             logging.warning("Attendance channel not set.")
             return
-
         now = datetime.now(tz=KST)
-        complete_members = []
+        voice_channel_members = self.voice_channel.members if self.voice_channel else []
+        complete_members, unterminated_members = self.alertService.get_final_attendees(now, voice_channel_members)
 
-        for member in self.today_members:
-            if member in self.voice_channel.members:
-                if member in self.join_time:
-                    elapsed_time = now - self.join_time[member]
-                    self.voice_times[member] += elapsed_time
-                    formatted_time = self.format_time(self.voice_times[member])
-                    logging.info(f'{member.display_name} 님 통화방 누적 시간 계산. 누적 접속 시간: {formatted_time}')
-                    await self.attendance_channel.send(
-                        f'<@{member.id}> 님의 오늘 통화방 누적 접속 시간: {formatted_time}'
-                    )
-                    self.join_time.pop(member)
-                else:
-                    logging.info(f'Member {member.display_name} has no join_time. Skipping.')
-
-            if (self.voice_times[member] >= timedelta(hours=1)
-                    and any(role.id == PARTICIPANT_ID for role in member.roles)):
-                complete_members.append((member, self.voice_times[member]))
+        for member, formatted_time in unterminated_members:
+            logging.info(f'{member.display_name} 님 통화방 누적 시간 계산. 누적 접속 시간: {formatted_time}')
+            await self.attendance_channel.send(
+                f'<@{member.id}> 님의 오늘 통화방 누적 접속 시간: {formatted_time}'
+            )
 
         if complete_members:
             mentions = ' '.join([f'<@{member.id}>' for member, _ in complete_members])
             await self.attendance_channel.send(f"20시부터 24시까지 1시간 이상 음성 채널에 참여한 사람들: {mentions}")
 
-        if len(self.join_time):
-            logging.info(f'join_time에 사람이 남아있습니다. join_time: {self.join_time}')
-
-        self._reset_daily_data()
-
-    def _reset_daily_data(self):
-        self.join_time.clear()
-        self.voice_times.clear()
-        self.today_members.clear()
-
-    def format_time(self, delta: timedelta) -> str:
-        hours, remainder = divmod(delta.total_seconds(), 3600)
-        minutes = remainder // 60
-        return f'{int(hours)}시간 {int(minutes)}분'
+        self.alertService.reset_daily_data()
 
 
 async def setup(bot) -> None:
