@@ -89,7 +89,13 @@ class Alert(commands.Cog):
             return
         now = datetime.now(tz=KST)
         voice_channel_members = self.voice_channel.members if self.voice_channel else []
-        complete_members = self.alertService.get_final_attendees(now, voice_channel_members)
+        complete_members, unterminated_members = self.alertService.get_final_attendees(now, voice_channel_members)
+
+        for member, formatted_time in unterminated_members:
+            logging.info(f'{member.display_name} 님 통화방 누적 시간 계산. 누적 접속 시간: {formatted_time}')
+            await self.attendance_channel.send(
+                f'<@{member.id}> 님의 오늘 통화방 누적 접속 시간: {formatted_time}'
+            )
 
         if complete_members:
             mentions = ' '.join([f'<@{member.id}>' for member, _ in complete_members])

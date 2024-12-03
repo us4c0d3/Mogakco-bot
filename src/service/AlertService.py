@@ -26,6 +26,7 @@ class AlertService:
 
     def get_final_attendees(self, now: datetime, voice_channel_members):
         complete_members = []
+        unterminated_members = []
         for member in self.today_members:
             if member in voice_channel_members:
                 if member in self.join_time:
@@ -34,6 +35,7 @@ class AlertService:
                     formatted_time = self.format_time(self.voice_times[member])
                     logging.info(f'{member.display_name} 님 통화방 누적 시간 계산. 누적 접속 시간: {formatted_time}')
                     self.join_time.pop(member)
+                    unterminated_members.append((member, formatted_time))
                 else:
                     logging.info(f'Member {member.display_name} has no join_time. Skipping.')
 
@@ -44,7 +46,7 @@ class AlertService:
         if len(self.join_time):
             logging.info(f'join_time에 사람이 남아있습니다. join_time: {self.join_time}')
 
-        return complete_members
+        return complete_members, unterminated_members
 
     def reset_daily_data(self):
         self.join_time.clear()
