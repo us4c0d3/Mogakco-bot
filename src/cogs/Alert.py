@@ -5,7 +5,7 @@ from datetime import timedelta, timezone, time, datetime
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
 
-from src.service.AlertService import AlertService
+from service.AlertService import AlertService
 
 load_dotenv()
 
