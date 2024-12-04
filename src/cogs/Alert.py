@@ -52,7 +52,7 @@ class Alert(commands.Cog):
             logging.warning(f'Channel with ID {ATTENDANCE_CHANNEL_ID} not found.')
 
         self.alert_attendance.start()
-        self.alert_final_attendance.start()
+        self.alert_final_attendees.start()
 
         logging.info('Alert.py is ready')
 
