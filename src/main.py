@@ -5,9 +5,6 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from src.repository.MemberRepository import MemberRepository
-from src.repository.db_connector import DBConnector
-
 load_dotenv()
 
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
@@ -55,8 +52,6 @@ class MyBot(commands.Bot):
 bot = MyBot()
 
 if __name__ == '__main__':
-    db_connector = DBConnector()
-    bot.member_repo = MemberRepository(db_connector)
     try:
         bot.run(DISCORD_TOKEN)
     except Exception as e:
