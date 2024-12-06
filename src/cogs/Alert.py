@@ -59,7 +59,7 @@ class Alert(commands.Cog):
     # 19:30 20시 참가자 30분 전 알림
     @tasks.loop(time=time(hour=19, minute=30, second=0, tzinfo=KST))
     async def alert_attendance(self) -> None:
-        await self.attendance_channel.send(f'<@&{self.participant_role_id}> 20시 모각코 30분 전입니다!')
+        await self.attendance_channel.send(f'<@&{PARTICIPANT_ID}> 20시 모각코 30분 전입니다!')
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
