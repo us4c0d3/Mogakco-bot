@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 
 from repository.DBConnector import DBConnector
 from src.repository.MemberRepository import MemberRepository
+from src.repository.StudyRepository import StudyRepository
 
 load_dotenv()
 
@@ -57,6 +58,7 @@ bot = MyBot()
 if __name__ == '__main__':
     db_connector = DBConnector()
     db_member_repo = MemberRepository(db_connector)
+    db_study_repo = StudyRepository(db_connector)
     try:
         bot.run(DISCORD_TOKEN)
     except Exception as e:
