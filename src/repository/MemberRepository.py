@@ -9,14 +9,10 @@ class MemberRepository:
         sql = '''
             SELECT * FROM member WHERE member_id = %s;
         '''
-        conn = self.db_connector.get_connection()
-
-        try:
+        with self.db_connector.get_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute(sql, (member_id,))
                 return cursor.fetchone()
-        finally:
-            conn.close()
 
     def insert_member(self, member: discord.Member):
         user_id = member.id
@@ -28,12 +24,8 @@ class MemberRepository:
             INSERT INTO member(user_id, name, display_name, penalty_count)
             VALUES (%s, %s, %s, %s);
         '''
-        conn = self.db_connector.get_connection()
-
-        try:
+        with self.db_connector.get_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute(sql, (user_id, name, display_name, penalty_count))
                 conn.commit()
                 return True
-        finally:
-            conn.close()
