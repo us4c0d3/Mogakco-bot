@@ -2,6 +2,8 @@ import logging
 from collections import defaultdict
 from datetime import timedelta, timezone, datetime
 
+from utils import TimeCalc
+
 
 class AlertService:
     def __init__(self, participant_role_id: int, tz=timezone(timedelta(hours=9))):
@@ -32,7 +34,7 @@ class AlertService:
                 if member in self.join_time:
                     elapsed_time = now - self.join_time[member]
                     self.voice_times[member] += elapsed_time
-                    formatted_time = self.format_time(self.voice_times[member])
+                    formatted_time = TimeCalc.format_time(self.voice_times[member])
                     logging.info(f'{member.display_name} 님 통화방 누적 시간 계산. 누적 접속 시간: {formatted_time}')
                     self.join_time.pop(member)
                     unterminated_members.append((member, formatted_time))

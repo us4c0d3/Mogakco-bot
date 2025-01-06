@@ -4,8 +4,8 @@ from datetime import timedelta, timezone, time, datetime
 
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
-
 from service.AlertService import AlertService
+from util import TimeCalc
 
 load_dotenv()
 
@@ -73,7 +73,7 @@ class Alert(commands.Cog):
         if after.channel is None and before.channel is not None:
             elapsed_time = self.alertService.track_leave(member, now)
             if elapsed_time:
-                formatted_time = self.alertService.format_time(elapsed_time)
+                formatted_time = TimeCalc.format_time(elapsed_time)
                 logging.info(f'{member.display_name} 님이 통화방에서 퇴장했습니다. 누적 접속 시간: {formatted_time}')
                 await self.attendance_channel.send(
                     f'<@{member.id}> 님의 오늘 통화방 누적 접속 시간: {formatted_time}'
