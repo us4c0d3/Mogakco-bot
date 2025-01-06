@@ -54,9 +54,3 @@ class AlertService:
         self.join_time.clear()
         self.voice_times.clear()
         self.today_members.clear()
-
-    @staticmethod
-    def format_time(delta: timedelta) -> str:
-        hours, remainder = divmod(delta.total_seconds(), 3600)
-        minutes = remainder // 60
-        return f'{int(hours)}시간 {int(minutes)}분'
