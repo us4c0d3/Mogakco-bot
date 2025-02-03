@@ -13,17 +13,17 @@ class StudyRepository:
                 conn.commit()
                 return True
 
-    def get_member_times_on_week(self, user_id, start_date, end_date):
+    def get_weekly_study_time(self, user_id, start_date, end_date):
         sql = '''
-            SELECT m.name, s.today, s.study_hours 
+            SELECT COALESCE(SUM(s.study_hours), 0) AS total_hours
             FROM study s
             JOIN member m ON s.member_id = m.id  
             WHERE m.user_id = %s 
-            AND s.today >= %s AND s.today <= %s
+            AND s.today BETWEEN %s AND %s
         '''
 
         with self.db_connector.get_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute(sql, (user_id, start_date, end_date))
-                results = cursor.fetchall()
-                return results
+                result = cursor.fetchone()
+                return result['total_hours'] if result else 0

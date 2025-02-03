@@ -2,6 +2,8 @@
 
 ### Alert
 
+- [ ] `get_final_attendees` 기능 분리
+    - 보류
 - [ ] 
 
 ### Study
