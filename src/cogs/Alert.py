@@ -33,7 +33,10 @@ class Alert(commands.Cog):
         self.voice_channel = None
         self.attendance_channel = None
 
-        self.alertService = AlertService(participant_role_id=PARTICIPANT_ID, tz=KST)
+        self.alertService = AlertService(
+            participant_role_id=PARTICIPANT_ID,
+            tz=KST
+        )
 
     @commands.Cog.listener()
     async def on_ready(self):

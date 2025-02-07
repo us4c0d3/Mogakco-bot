@@ -2,6 +2,7 @@ import logging
 from collections import defaultdict
 from datetime import timedelta, timezone, datetime
 
+from service.StudyService import StudyService
 from utils import TimeCalc
 
 
@@ -10,9 +11,12 @@ class AlertService:
         self.participant_role_id = participant_role_id
         self.tz = tz
 
+        self.study_service = StudyService()
+
         self.join_time = {}
         self.voice_times = defaultdict(timedelta)
         self.today_members = []
+        self.complete_members = []
 
     def track_join(self, member, now: datetime):
         self.join_time[member] = now
@@ -27,7 +31,6 @@ class AlertService:
         return None
 
     def get_final_attendees(self, now: datetime, voice_channel_members):
-        complete_members = []
         unterminated_members = []
         for member in self.today_members:
             if member in voice_channel_members:
@@ -43,14 +46,25 @@ class AlertService:
 
             if (self.voice_times[member] >= timedelta(hours=1)
                     and any(role.id == self.participant_role_id for role in member.roles)):
-                complete_members.append((member, self.voice_times[member]))
+                self.complete_members.append((member, self.voice_times[member]))
 
         if len(self.join_time):
             logging.info(f'join_time에 사람이 남아있습니다. join_time: {self.join_time}')
 
-        return complete_members, unterminated_members
+        return self.complete_members, unterminated_members
 
     def reset_daily_data(self):
         self.join_time.clear()
         self.voice_times.clear()
         self.today_members.clear()
+        self.complete_members.clear()
+
+    def save_study_data(self):
+        now = datetime.now(tz=self.tz)
+        record_date = now.date()
+
+        if now.hour == 0:
+            record_date = record_date - timedelta(days=1)
+
+        for member, times in self.complete_members:
+            self.study_service.save_study_data(member.id, times, record_date)
