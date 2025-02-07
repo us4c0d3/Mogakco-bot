@@ -31,6 +31,7 @@ class AlertService:
         return None
 
     def get_final_attendees(self, now: datetime, voice_channel_members):
+        self.complete_members.clear()
         unterminated_members = []
         for member in self.today_members:
             if member in voice_channel_members:
