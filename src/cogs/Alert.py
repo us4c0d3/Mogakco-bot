@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 from datetime import timedelta, timezone, time, datetime
@@ -105,6 +106,28 @@ class Alert(commands.Cog):
             await self.attendance_channel.send(f"20시부터 24시까지 1시간 이상 음성 채널에 참여한 사람들: {mentions}")
 
         self.alertService.reset_daily_data()
+
+    @tasks.loop(weeks=1)
+    async def alert_penalty_members(self) -> None:
+        pass
+
+    @alert_penalty_members.before_loop
+    async def before_alert_penalty_members(self) -> None:
+        now = datetime.now(tz=KST)
+        target_time = now.replace(hour=0, minute=45, second=0)
+
+        days_ahead = 0 - now.weekday()
+        if days_ahead <= 0:
+            days_ahead += 7
+
+        target_time = target_time + timedelta(days=days_ahead)
+
+        if target_time < now:
+            target_time += timedelta(weeks=1)
+
+        delay = (target_time - now).total_seconds()
+        logging.info(f'초기 딜레이: {delay}초 후 페널티 체크 작업 시작')
+        await asyncio.sleep(delay)
 
 
 async def setup(bot) -> None:
