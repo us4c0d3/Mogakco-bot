@@ -68,4 +68,5 @@ class AlertService:
             record_date = record_date - timedelta(days=1)
 
         for member, times in self.complete_members:
-            self.study_service.save_study_data(member.id, times, record_date)
+            study_hours = round(times.total_seconds() / 3600, 2)
+            self.study_service.save_study_data(member.id, study_hours, record_date)
