@@ -1,11 +1,14 @@
+import asyncio
 import logging
 import os
 from datetime import timedelta, timezone, time, datetime
 
+import discord
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
-
 from service.AlertService import AlertService
+from service.StudyService import StudyService
+from util import TimeCalc
 
 load_dotenv()
 
@@ -33,7 +36,12 @@ class Alert(commands.Cog):
         self.voice_channel = None
         self.attendance_channel = None
 
-        self.alertService = AlertService(participant_role_id=PARTICIPANT_ID, tz=KST)
+        self.alertService = AlertService(
+            participant_role_id=PARTICIPANT_ID,
+            tz=KST
+        )
+
+        self.studyService = StudyService()
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -73,7 +81,7 @@ class Alert(commands.Cog):
         if after.channel is None and before.channel is not None:
             elapsed_time = self.alertService.track_leave(member, now)
             if elapsed_time:
-                formatted_time = self.alertService.format_time(elapsed_time)
+                formatted_time = TimeCalc.format_time(elapsed_time)
                 logging.info(f'{member.display_name} 님이 통화방에서 퇴장했습니다. 누적 접속 시간: {formatted_time}')
                 await self.attendance_channel.send(
                     f'<@{member.id}> 님의 오늘 통화방 누적 접속 시간: {formatted_time}'
@@ -102,6 +110,47 @@ class Alert(commands.Cog):
             await self.attendance_channel.send(f"20시부터 24시까지 1시간 이상 음성 채널에 참여한 사람들: {mentions}")
 
         self.alertService.reset_daily_data()
+
+    @tasks.loop(weeks=1)
+    async def alert_penalty_members(self) -> None:
+        today = datetime.now(tz=KST)
+        monday, sunday = TimeCalc.calc_past_week(today)
+        members = self.get_attendance()
+
+        penalty_members = self.studyService.get_penalty_members(members, monday, sunday)
+        penalty_member_names = [member['name'] for member in penalty_members]
+        penalty_member_mentions = ' '.join([f"<@{penalty_member['member_id']}>" for penalty_member in penalty_members])
+
+        logging.info(f'This week penalty members: {penalty_member_names}')
+        if penalty_members:
+            await self.attendance_channel.send(
+                f"{penalty_member_mentions} {monday.strftime('%Y-%m-%d')} ~ {sunday.strftime('%Y-%m-%d')} 기간 중 4시간을 채우지 못한 참가자입니다. ")
+
+    @alert_penalty_members.before_loop
+    async def before_alert_penalty_members(self) -> None:
+        now = datetime.now(tz=KST)
+        target_time = now.replace(hour=0, minute=45, second=0)
+
+        days_ahead = 0 - now.weekday()
+        if days_ahead <= 0:
+            days_ahead += 7
+
+        target_time = target_time + timedelta(days=days_ahead)
+
+        if target_time < now:
+            target_time += timedelta(weeks=1)
+
+        delay = (target_time - now).total_seconds()
+        logging.info(f'초기 딜레이: {delay}초 후 페널티 체크 작업 시작')
+        await asyncio.sleep(delay)
+
+    async def get_attendance(self):
+        attendance_role = discord.utils.get(self.attendance_channel.guild.roles, id=PARTICIPANT_ID)
+        if not attendance_role:
+            logging.info("참가자가 없습니다.")
+            return []
+
+        return [member for member in self.attendance_channel.guild.members if attendance_role is member.role]
 
 
 async def setup(bot) -> None:
