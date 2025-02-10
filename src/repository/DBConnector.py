@@ -1,7 +1,7 @@
 import pymysql
 from pymysql.cursors import DictCursor
 
-from ..repository import CONFIG
+from repository import CONFIG
 
 
 class DBConnector:

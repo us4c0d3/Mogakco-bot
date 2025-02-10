@@ -6,8 +6,8 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 from repository.DBConnector import DBConnector
-from src.repository.MemberRepository import MemberRepository
-from src.repository.StudyRepository import StudyRepository
+from repository.MemberRepository import MemberRepository
+from repository.StudyRepository import StudyRepository
 
 load_dotenv()
 
