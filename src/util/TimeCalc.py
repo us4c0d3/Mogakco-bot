@@ -14,3 +14,8 @@ class TimeCalc:
         sunday = monday + timedelta(days=6)
 
         return monday, sunday
+
+    @staticmethod
+    def calc_past_week(today: datetime) -> tuple:
+        monday, sunday = TimeCalc.calc_week(today)
+        return monday - timedelta(days=7), sunday - timedelta(days=7)

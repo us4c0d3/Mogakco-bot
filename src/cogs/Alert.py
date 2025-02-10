@@ -3,9 +3,11 @@ import logging
 import os
 from datetime import timedelta, timezone, time, datetime
 
+import discord
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
 from service.AlertService import AlertService
+from service.StudyService import StudyService
 from util import TimeCalc
 
 load_dotenv()
@@ -38,6 +40,8 @@ class Alert(commands.Cog):
             participant_role_id=PARTICIPANT_ID,
             tz=KST
         )
+
+        self.studyService = StudyService()
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -109,7 +113,18 @@ class Alert(commands.Cog):
 
     @tasks.loop(weeks=1)
     async def alert_penalty_members(self) -> None:
-        pass
+        today = datetime.now(tz=KST)
+        monday, sunday = TimeCalc.calc_past_week(today)
+        members = self.get_attendance()
+
+        penalty_members = self.studyService.get_penalty_members(members, monday, sunday)
+        penalty_member_names = [member['name'] for member in penalty_members]
+        penalty_member_mentions = ' '.join([f"<@{penalty_member['member_id']}>" for penalty_member in penalty_members])
+
+        logging.info(f'This week penalty members: {penalty_member_names}')
+        if penalty_members:
+            await self.attendance_channel.send(
+                f"{penalty_member_mentions} {monday.strftime('%Y-%m-%d')} ~ {sunday.strftime('%Y-%m-%d')} 기간 중 4시간을 채우지 못한 참가자입니다. ")
 
     @alert_penalty_members.before_loop
     async def before_alert_penalty_members(self) -> None:
@@ -128,6 +143,14 @@ class Alert(commands.Cog):
         delay = (target_time - now).total_seconds()
         logging.info(f'초기 딜레이: {delay}초 후 페널티 체크 작업 시작')
         await asyncio.sleep(delay)
+
+    async def get_attendance(self):
+        attendance_role = discord.utils.get(self.attendance_channel.guild.roles, id=PARTICIPANT_ID)
+        if not attendance_role:
+            logging.info("참가자가 없습니다.")
+            return []
+
+        return [member for member in self.attendance_channel.guild.members if attendance_role is member.role]
 
 
 async def setup(bot) -> None:
