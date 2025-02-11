@@ -8,7 +8,7 @@ from discord.ext import commands, tasks
 from dotenv import load_dotenv
 from service.AlertService import AlertService
 from service.StudyService import StudyService
-from util import TimeCalc
+from util.TimeCalc import TimeCalc
 
 load_dotenv()
 
