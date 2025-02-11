@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import timedelta, timezone, datetime
 
 from service.StudyService import StudyService
-from utils import TimeCalc
+from util import TimeCalc
 
 
 class AlertService:
