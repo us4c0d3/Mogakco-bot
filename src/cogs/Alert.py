@@ -111,7 +111,7 @@ class Alert(commands.Cog):
 
         self.alertService.reset_daily_data()
 
-    @tasks.loop(weeks=1)
+    @tasks.loop(hours=168)
     async def alert_penalty_members(self) -> None:
         today = datetime.now(tz=KST)
         monday, sunday = TimeCalc.calc_past_week(today)
