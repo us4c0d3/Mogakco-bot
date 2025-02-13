@@ -2,16 +2,15 @@ import logging
 from collections import defaultdict
 from datetime import timedelta, timezone, datetime
 
-from service.StudyService import StudyService
 from util import TimeCalc
 
 
 class AlertService:
-    def __init__(self, participant_role_id: int, tz=timezone(timedelta(hours=9))):
+    def __init__(self, participant_role_id: int, study_service, tz=timezone(timedelta(hours=9))):
         self.participant_role_id = participant_role_id
         self.tz = tz
 
-        self.study_service = StudyService()
+        self.study_service = study_service
 
         self.join_time = {}
         self.voice_times = defaultdict(timedelta)

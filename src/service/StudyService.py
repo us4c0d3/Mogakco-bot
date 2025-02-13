@@ -1,16 +1,13 @@
 import logging
 from datetime import timezone, timedelta
 
-from repository.MemberRepository import MemberRepository
-from repository.StudyRepository import StudyRepository
-
 tz = timezone(timedelta(hours=+9), 'KST')
 
 
 class StudyService:
-    def __init__(self):
-        self.member_repo = MemberRepository
-        self.study_repo = StudyRepository
+    def __init__(self, member_repo, study_repo):
+        self.member_repo = member_repo
+        self.study_repo = study_repo
 
     def ensure_member(self, member):
         db_member = self.member_repo.get_by_id(member.id)
