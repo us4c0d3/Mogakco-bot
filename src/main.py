@@ -8,12 +8,15 @@ from dotenv import load_dotenv
 from repository.DBConnector import DBConnector
 from repository.MemberRepository import MemberRepository
 from repository.StudyRepository import StudyRepository
+from service.AlertService import AlertService
+from service.StudyService import StudyService
 
 load_dotenv()
 
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 APPLICATION_ID = os.getenv('APPLICATION_ID')
 TEST_GUILD_ID = os.getenv('TEST_GUILD_ID')
+PARTICIPANT_ID = int(os.getenv('PARTICIPANT_ID'))
 
 discord.utils.setup_logging(level=logging.DEBUG)
 
@@ -57,8 +60,10 @@ bot = MyBot()
 
 if __name__ == '__main__':
     db_connector = DBConnector()
-    db_member_repo = MemberRepository(db_connector)
-    db_study_repo = StudyRepository(db_connector)
+    member_repo = MemberRepository(db_connector)
+    study_repo = StudyRepository(db_connector)
+    study_service = StudyService(member_repo, study_repo)
+    alert_service = AlertService(participant_role_id=PARTICIPANT_ID, study_service=study_service)
     try:
         bot.run(DISCORD_TOKEN)
     except Exception as e:
