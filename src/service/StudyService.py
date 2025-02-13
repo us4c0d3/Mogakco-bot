@@ -1,3 +1,4 @@
+import logging
 from datetime import timezone, timedelta
 
 from repository.MemberRepository import MemberRepository
@@ -11,8 +12,15 @@ class StudyService:
         self.member_repo = MemberRepository
         self.study_repo = StudyRepository
 
-    def save_study_time(self, member_id, study_time, record_date):
-        return self.member_repo.save_study_time(member_id, study_time, record_date)
+    def ensure_member(self, member):
+        db_member = self.member_repo.get_by_id(member.id)
+        if db_member is None:
+            self.member_repo.insert_member(member)
+            logging.info(f"Inserted member {member.display_name} ({member.id})")
+
+    def save_study_time(self, member, study_time, record_date):
+        self.ensure_member(member)
+        return self.study_repo.insert(member.id, study_time, record_date)
 
     def get_members_study_time(self, members, monday, sunday):
         member_ids = [member.id for member in members]
