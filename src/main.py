@@ -58,8 +58,6 @@ class MyBot(commands.Bot):
         await self.change_presence(status=discord.Status.online, activity=game)
 
 
-bot = MyBot()
-
 if __name__ == '__main__':
     db_connector = DBConnector()
     member_repo = MemberRepository(db_connector)
