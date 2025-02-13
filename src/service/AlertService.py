@@ -69,4 +69,4 @@ class AlertService:
 
         for member, times in self.complete_members:
             study_hours = round(times.total_seconds() / 3600, 2)
-            self.study_service.save_study_data(member.id, study_hours, record_date)
+            self.study_service.save_study_time(member, study_hours, record_date)

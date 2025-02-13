@@ -108,6 +108,7 @@ class Alert(commands.Cog):
         if complete_members:
             mentions = ' '.join([f'<@{member.id}>' for member, _ in complete_members])
             await self.attendance_channel.send(f"20시부터 24시까지 1시간 이상 음성 채널에 참여한 사람들: {mentions}")
+            self.alertService.save_study_date()
 
         self.alertService.reset_daily_data()
 
