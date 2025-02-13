@@ -22,7 +22,7 @@ discord.utils.setup_logging(level=logging.DEBUG)
 
 
 class MyBot(commands.Bot):
-    def __init__(self):
+    def __init__(self, alert_service: AlertService):
         intents = discord.Intents.default()
         intents.members = True
         intents.message_content = True
@@ -34,6 +34,8 @@ class MyBot(commands.Bot):
             sync_command=True,
             application_id=APPLICATION_ID
         )
+
+        self.alert_service = alert_service
 
     async def load_extensions(self):
         logging.info('Loading extensions...')
@@ -64,6 +66,7 @@ if __name__ == '__main__':
     study_repo = StudyRepository(db_connector)
     study_service = StudyService(member_repo, study_repo)
     alert_service = AlertService(participant_role_id=PARTICIPANT_ID, study_service=study_service)
+    bot = MyBot(alert_service)
     try:
         bot.run(DISCORD_TOKEN)
     except Exception as e:
