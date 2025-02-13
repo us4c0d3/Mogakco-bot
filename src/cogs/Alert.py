@@ -6,8 +6,6 @@ from datetime import timedelta, timezone, time, datetime
 import discord
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
-from service.AlertService import AlertService
-from service.StudyService import StudyService
 from util.TimeCalc import TimeCalc
 
 load_dotenv()
@@ -36,12 +34,7 @@ class Alert(commands.Cog):
         self.voice_channel = None
         self.attendance_channel = None
 
-        self.alertService = AlertService(
-            participant_role_id=PARTICIPANT_ID,
-            tz=KST
-        )
-
-        self.studyService = StudyService()
+        self.alertService = bot.alert_service
 
     @commands.Cog.listener()
     async def on_ready(self):
